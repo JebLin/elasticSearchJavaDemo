@@ -1,6 +1,7 @@
 package indi.sword.operation.update;
 
 import indi.sword.operation.TestBase;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.junit.Test;
@@ -62,6 +63,30 @@ public class TestUpdate extends TestBase {
     public void testUpdateByScript() throws ExecutionException, InterruptedException {
         UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, "gfujmmoBqn4bnQeoVZDf")
                 .script(new Script("ctx._source.user = \"BBB testUpdateByScript\""));
+        client.update(updateRequest).get();
+    }
+
+
+    /**
+     * 更新文档 如果存在更新，否则插入
+     *
+     * 如果参数中的_id存在，即index/type/_id存在，那么就会执行UpdateRequest，如果index/type/_id不存在，那么就直接插入
+     */
+    @Test
+    public void testUpsert() throws IOException, ExecutionException, InterruptedException {
+        IndexRequest indexRequest = new IndexRequest(INDEX, TYPE, "gfujmmoBqn4bnQeoVZDf")
+                .source(jsonBuilder()
+                        .startObject()
+                        .field("user", "BBB testUpsert")
+                        .field("date", "2019-05-09")
+                        .field("message", "B ElasticSearch")
+                        .endObject());
+        UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, "gfujmmoBqn4bnQeoVZDf")
+                .doc(jsonBuilder()
+                        .startObject()
+                        .field("user", "BBB testUpsert")
+                        .endObject())
+                .upsert(indexRequest); //如果不存在，就增加indexRequest
         client.update(updateRequest).get();
     }
 

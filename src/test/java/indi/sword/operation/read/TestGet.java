@@ -1,12 +1,24 @@
 package indi.sword.operation.read;
 
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import indi.sword.operation.TestBase;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetResponse;
+import org.elasticsearch.action.search.*;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author jeb_lin
@@ -33,5 +45,108 @@ public class TestGet extends TestBase {
         }
 
     }
+
+
+    /**
+     * 一次获取多个文档
+     */
+    @Test
+    public void TestMultiGetApi() {
+        MultiGetResponse responses = client.prepareMultiGet()
+                .add(INDEX, TYPE, "hfuommoBqn4bnQeoE5Da") //一个ID的方式
+                .add(INDEX, TYPE, "gfujmmoBqn4bnQeoVZDf", "1gfujmmoBqn4bnQeoVZDf")//多个ID的方式
+                .add("anotherIndex", "anotherType", "idInAnotherIndex") //从另一个索引里面获取
+                .get();
+        for (MultiGetItemResponse itemResponse : responses) {
+            GetResponse response = itemResponse.getResponse();
+            if (response.isExists()) {
+                String source = response.getSourceAsString(); //_source
+                JSONObject jsonObject = JSON.parseObject(source);
+                Set<String> sets = jsonObject.keySet();
+                for (String str : sets) {
+                    System.out.println("key -> " + str + ",value -> "+jsonObject.get(str));
+                    System.out.println("===============");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSearchApi() {
+        SearchResponse response = client.prepareSearch(INDEX).setTypes(TYPE)
+                .setQuery(QueryBuilders.matchQuery("user", "AA testCreateBulkProcessor")).get();
+        SearchHit[] hits = response.getHits().getHits();
+        for (int i = 0; i < hits.length; i++) {
+            String json = hits[i].getSourceAsString();
+            JSONObject object = JSON.parseObject(json);
+            Set<String> strings = object.keySet();
+            for (String str : strings) {
+                System.out.println(object.get(str));
+            }
+        }
+    }
+
+
+    /**
+        一般的搜索请求都时返回一页的数据，无论多大的数据量都会返回给用户，
+     Scrolls API 可以允许我们检索大量的数据（甚至是全部数据）。
+     Scroll API允许我们做一个初始阶段搜索页并且持续批量从ElasticSearch里面拉去结果知道结果没有剩下。
+     Scroll API的创建并不是为了实时的用户响应，而是为了处理大量的数据。
+
+     */
+    /**
+     * 滚动查询
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    @Test
+    public void testScrollApi() throws ExecutionException, InterruptedException {
+        MatchQueryBuilder qb = QueryBuilders.matchQuery("user", "AA testCreateBulkProcessor");
+        SearchResponse response = client.prepareSearch(INDEX).addSort(FieldSortBuilder.DOC_FIELD_NAME,
+                SortOrder.ASC)
+                .setScroll(new TimeValue(60000)) //为了使用scroll，初始搜索请求应该在查询中指定scroll参数，告诉ElasticSearch需要保持搜索的上下文环境多长时间
+                .setQuery(qb)
+                .setSize(100).get();
+        do {
+            for (SearchHit hit : response.getHits().getHits()) {
+                String json = hit.getSourceAsString();
+                JSONObject object = JSON.parseObject(json);
+                Set<String> strings = object.keySet();
+                for (String str : strings) {
+                    System.out.println(object.get(str));
+                }
+            }
+            response = client.prepareSearchScroll(response.getScrollId()).setScroll(new TimeValue(60000)).execute().get();
+        } while (response.getHits().getHits().length != 0);
+
+
+        /*
+            虽然滚动时间已过，搜索上下文会自动被清除，但是一直保持滚动代价会很大，所以当我们不在使用滚动时要尽快使用Clear-Scroll API进行清除。
+         */
+        ClearScrollRequestBuilder clearBuilder = client.prepareClearScroll();
+        clearBuilder.addScrollId(response.getScrollId());
+        ClearScrollResponse scrollResponse = clearBuilder.get();
+        System.out.println("是否清楚成功："+scrollResponse.isSucceeded());
+
+    }
+
+
+    /**
+     * MultiSearch API 允许在同一个API中执行多个搜索请求。它的端点是 _msearch
+     */
+    @Test
+    public void testMultiSearchApi() {
+        SearchRequestBuilder srb1 = client.prepareSearch().setQuery(QueryBuilders.queryStringQuery("elasticsearch")).setSize(1);
+        SearchRequestBuilder srb2 = client.prepareSearch().setQuery(QueryBuilders.matchQuery("user", "hhh")).setSize(1);
+        MultiSearchResponse multiSearchResponse = client.prepareMultiSearch().add(srb1).add(srb2).get();
+        long nbHits = 0;
+        for (MultiSearchResponse.Item item : multiSearchResponse.getResponses()) {
+            SearchResponse response = item.getResponse();
+            nbHits += response.getHits().getTotalHits();
+        }
+        System.out.println(nbHits);
+    }
+
+
 
 }

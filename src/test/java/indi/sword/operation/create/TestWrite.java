@@ -1,21 +1,17 @@
-package indi.sword.write;
+package indi.sword.operation.create;
+
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import indi.sword.bean.Blog;
+import indi.sword.operation.TestBase;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,21 +20,12 @@ import java.util.Map;
  * @author jeb_lin
  * 上午11:15 2019/5/9
  */
-public class TestClientWrite {
-    TransportClient client = null;
+public class TestWrite extends TestBase {
 
-    public static final String INDEX = "test";
-
-    public static final String TYPE = "_doc";
-
-    @Before
-    public void beforeClient() throws UnknownHostException {
-        client = new PreBuiltTransportClient(Settings.EMPTY)
-                .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));
-    }
 
     /**
      * 手动方式
+     *
      * @throws UnknownHostException
      */
     @Test

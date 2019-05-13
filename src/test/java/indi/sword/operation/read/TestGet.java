@@ -126,7 +126,7 @@ public class TestGet extends TestBase {
         ClearScrollRequestBuilder clearBuilder = client.prepareClearScroll();
         clearBuilder.addScrollId(response.getScrollId());
         ClearScrollResponse scrollResponse = clearBuilder.get();
-        System.out.println("是否清楚成功："+scrollResponse.isSucceeded());
+        System.out.println("clearOK ? ："+scrollResponse.isSucceeded());
 
     }
 
@@ -146,6 +146,8 @@ public class TestGet extends TestBase {
         }
         System.out.println(nbHits);
     }
+
+
 
 
 

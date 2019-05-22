@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import indi.sword.bean.Blog;
 import indi.sword.operation.TestBase;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -72,7 +73,7 @@ public class TestWrite extends TestBase {
         ObjectMapper mapper = new ObjectMapper();
         byte[] bytes = mapper.writeValueAsBytes(blog);
         IndexResponse response = client.prepareIndex(INDEX, TYPE).setSource(bytes, XContentType.JSON).get();
-        System.out.println(response.getResult());
+        System.out.println(response.getResult() == DocWriteResponse.Result.CREATED);
     }
 
     /**

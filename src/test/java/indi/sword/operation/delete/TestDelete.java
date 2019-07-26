@@ -6,6 +6,7 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
 import org.junit.Test;
 
 /**
@@ -33,7 +34,7 @@ public class TestDelete extends TestBase {
     @Test
     public void deleteByQuery() {
         BulkByScrollResponse deleteResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
-                .filter(QueryBuilders.matchQuery("user", "D")) //查询条件
+                .filter(QueryBuilders.matchQuery("name", "JebLin")) //查询条件
                 .source(INDEX).get();//索引名
         System.out.println(deleteResponse);
         System.out.println(deleteResponse.getDeleted());//删除文档数量

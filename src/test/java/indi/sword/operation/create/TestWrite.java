@@ -68,7 +68,7 @@ public class TestWrite extends TestBase {
         Blog blog = new Blog();
         blog.setUser("C");
         blog.setDate("2019-05-09");
-        blog.setMessage("C ElasticSearch");
+        blog.setMessage("C11 ElasticSearch");
 
         ObjectMapper mapper = new ObjectMapper();
         byte[] bytes = mapper.writeValueAsBytes(blog);
